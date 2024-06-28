@@ -11,7 +11,7 @@ namespace Options
 {
     public class Additional
     {
-        public int num;
+        public decimal num;
         public string opt;
         public List<OutputTickRecord> list;
     }
@@ -24,7 +24,7 @@ namespace Options
         public decimal High { get; set; }
         public decimal Low { get; set; }
         public decimal Close { get; set; }
-        public int Vol { get; set; }
+        public decimal Vol { get; set; }
     }
 
     public class SimpleTickRecord
@@ -111,6 +111,7 @@ namespace Options
         public static List<TickRecord> ReadFile(string filePath)
         {
             var tickRecords = new List<TickRecord>();
+
             var lines = File.ReadAllLines(filePath);
 
             foreach (var line in lines.Skip(1)) // Assuming first line is header
@@ -125,7 +126,7 @@ namespace Options
                     High = decimal.Parse(values[5], CultureInfo.InvariantCulture),
                     Low = decimal.Parse(values[6], CultureInfo.InvariantCulture),
                     Close = decimal.Parse(values[7], CultureInfo.InvariantCulture),
-                    Vol = (int)decimal.Parse(values[8], CultureInfo.InvariantCulture)
+                    Vol = decimal.Parse(values[8], CultureInfo.InvariantCulture)
                 };
                 tickRecords.Add(tickRecord);
             }
@@ -157,9 +158,9 @@ namespace Options
             {
                 var t = new OutputTickRecord
                 {
-                    Oi = table1[i].Close != 0 ? ((int)table1[i].Close / 2).ToString() : "",
-                    Vol = table2[i].Vol != 0 ? (table2[i].Vol).ToString() : "",
-                    Price = table2[i].Vol != 0 ? (table2[i].Low).ToString() : "",
+                    Oi = table1[i].Close != 0 ? (table1[i].Close / 2).ToString() : "",
+                    Vol = table2[i].Vol != 0 ? table2[i].Vol.ToString() : "",
+                    Price = table2[i].Vol != 0 ? table2[i].Low.ToString() : "",
                 };
 
                 res.Add(t);
@@ -179,7 +180,7 @@ namespace Options
                 .ToList();
         }
 
-        public static Additional Adddata(List<TickRecord> futures, string opt, string d, int num, int per)
+        public static Additional Adddata(List<TickRecord> futures, string opt, string d, decimal num, int per)
         {
             var pricedata = ReadFile(d + $@"{opt} {num}.txt");
             var pricedatagroupped = GroupTickRecords(pricedata, per);
@@ -198,14 +199,9 @@ namespace Options
             {
                 if (i > 0 && pricedatastrached[i].Vol != 0)
                 {
-                    // if (oidatastratched[i].Close < oidatastratched[i - 1].Close)
-                    //pricedatastrached[i].Vol *= -1;
-
-                    pricedatastrached[i].Vol = (int)((oidatastratched[i].Close - oidatastratched[i - 1].Close) / 2);
+                    pricedatastrached[i].Vol = (oidatastratched[i].Close - oidatastratched[i - 1].Close) / 2;
                 }
             }
-
-
 
             return new Additional
             {
@@ -215,7 +211,7 @@ namespace Options
             };
         }
 
-        public static List<Tuple<string, int>> ScanFilesInFolder(string folderPath)
+        public static List<Tuple<string, decimal>> ScanFilesInFolder(string folderPath)
         {
             // Проверяем, существует ли папка
             if (!Directory.Exists(folderPath))
@@ -227,10 +223,10 @@ namespace Options
             var files = Directory.GetFiles(folderPath);
 
             // Регулярное выражение для поиска необходимых файлов
-            var regex = new Regex(@"^(CALL|PUT) (\d+)\.txt$", RegexOptions.IgnoreCase);
+            var regex = new Regex(@"^(CALL|PUT) (\d+\,\d+|\d+)\.txt$", RegexOptions.IgnoreCase);
 
             // Создаем список для хранения результатов
-            var result = new List<Tuple<string, int>>();
+            var result = new List<Tuple<string, decimal>>();
 
             // Проходимся по каждому файлу и проверяем его соответствие регулярному выражению
             foreach (var file in files)
@@ -240,8 +236,8 @@ namespace Options
                 if (match.Success)
                 {
                     string type = match.Groups[1].Value.ToUpper();
-                    int number = int.Parse(match.Groups[2].Value);
-                    result.Add(new Tuple<string, int>(type, number));
+                    decimal number = decimal.Parse(match.Groups[2].Value);
+                    result.Add(new Tuple<string, decimal>(type, number));
                 }
             }
 
@@ -260,8 +256,6 @@ namespace Options
 
             foreach (var z in zzz)
             {
-
-
                 var xx1 = Adddata(futures, z.Item1, dirPath, z.Item2, per);
                 list.Add(xx1);
             }
@@ -269,8 +263,6 @@ namespace Options
             list = list.OrderBy(x => x.opt).ThenBy(x => x.num).ToList();
             return SerializeTickRecords(futures, list);
         }
-
-
 
         public static string SerializeTickRecords(List<TickRecord> tickRecords, List<Additional> add)
         {
@@ -306,6 +298,12 @@ namespace Options
                     record.Close
                     );
 
+
+                var allstr = String.Join("", add.Select(addj => addj.list[i].Oi + addj.list[i].Vol + addj.list[i].Price));
+
+                if (string.IsNullOrEmpty(allstr))
+                    continue;
+
                 for (var j = 0; add.Count > j; j++)
                 {
                     s += $";;{add[j].list[i].Oi};{add[j].list[i].Vol};{add[j].list[i].Price}";
@@ -318,12 +316,9 @@ namespace Options
             return sb.ToString();
         }
 
-
-
-
         public static List<TickRecord> GroupTickRecordsFut(List<TickRecord> tickRecords, int newPeriod)
         {
-
+            newPeriod = 1;
 
             var groupedRecords = new List<TickRecord>();
 
@@ -354,16 +349,12 @@ namespace Options
                 }
             }
 
-
-
-
             return groupedRecords;
         }
 
         public static List<TickRecord> GroupTickRecords(List<TickRecord> tickRecords, int newPeriod)
         {
-
-
+            newPeriod = 1;
             var groupedRecords = new List<TickRecord>();
 
             var groupedByTicker = tickRecords.GroupBy(rec => RoundToNearestInterval(rec.DateTime, newPeriod));
@@ -392,9 +383,6 @@ namespace Options
                     groupedRecords.Add(groupedRecord);
                 }
             }
-
-
-
 
             return groupedRecords;
         }
