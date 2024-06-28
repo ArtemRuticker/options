@@ -7,7 +7,7 @@ public class PortfolioItem
     public string Type { get; set; }
 
     [JsonProperty("open")]
-    public int Open { get; set; }
+    public decimal Open { get; set; }
 
     [JsonProperty("code")]
     public string Code { get; set; }
@@ -16,16 +16,16 @@ public class PortfolioItem
     public string Expiration { get; set; }
 
     [JsonProperty("price")]
-    public int Price { get; set; }
+    public decimal Price { get; set; }
 
     [JsonProperty("assetPrice")]
-    public int AssetPrice { get; set; }
+    public decimal AssetPrice { get; set; }
 
     [JsonProperty("optionType")]
     public string OptionType { get; set; }
 
     [JsonProperty("strike")]
-    public int Strike { get; set; }
+    public decimal Strike { get; set; }
 
     [JsonProperty("qty")]
     public int Quantity { get; set; }
@@ -46,10 +46,9 @@ public class PortfolioData
     public List<PortfolioItem> Portfolio { get; set; }
 
     [JsonProperty("assetPrice")]
-    public int AssetPrice { get; set; }
+    public decimal AssetPrice { get; set; }
 
-    [JsonProperty("updatePeriod")]
-    public int UpdatePeriod { get; set; }
+
 }
 
 
