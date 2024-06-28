@@ -137,9 +137,10 @@ namespace Options
 
         private static DateTime RoundToNearestInterval(DateTime dt, int intervalMinutes)
         {
+
             var totalMinutes = (int)dt.TimeOfDay.TotalMinutes;
-            if (totalMinutes < 540)
-                totalMinutes = 540;
+            //if (totalMinutes < 540)                totalMinutes = 540;
+
             var roundedTotalMinutes = (totalMinutes / intervalMinutes) * intervalMinutes;
             return dt.Date.AddMinutes(roundedTotalMinutes);
         }
@@ -147,9 +148,16 @@ namespace Options
 
         public class OutputTickRecord
         {
-            public string Oi { get; set; }
-            public string Vol { get; set; }
-            public string Price { get; set; }
+            public decimal Oi { get; set; }
+            public decimal Vol { get; set; }
+            public decimal Price { get; set; }
+
+            public override string ToString()
+            {
+                Func<decimal, string> tos = (z) => z == 0 ? "" : z.ToString();
+
+                return $"{tos(Oi)};{tos(Vol)};{tos(Price)}";
+            }
         }
         public static List<OutputTickRecord> CombineTables(List<TickRecord> table1, List<TickRecord> table2)
         {
@@ -158,9 +166,9 @@ namespace Options
             {
                 var t = new OutputTickRecord
                 {
-                    Oi = table1[i].Close != 0 ? (table1[i].Close / 2).ToString() : "",
-                    Vol = table2[i].Vol != 0 ? table2[i].Vol.ToString() : "",
-                    Price = table2[i].Vol != 0 ? table2[i].Low.ToString() : "",
+                    Oi = table1[i].Close != 0 ? (table1[i].Close / 2) : 0,
+                    Vol = table2[i].Vol != 0 ? table2[i].Vol : 0,
+                    Price = table2[i].Vol != 0 ? table2[i].Low : 0,
                 };
 
                 res.Add(t);
@@ -299,14 +307,14 @@ namespace Options
                     );
 
 
-                var allstr = String.Join("", add.Select(addj => addj.list[i].Oi + addj.list[i].Vol + addj.list[i].Price));
+                var allstr = add.Sum(addj => addj.list[i].Vol);// String.Join("", add.Select(addj => addj.list[i].Oi + addj.list[i].Vol + addj.list[i].Price));
 
-                if (string.IsNullOrEmpty(allstr))
+                if ((allstr) == 0)
                     continue;
 
                 for (var j = 0; add.Count > j; j++)
                 {
-                    s += $";;{add[j].list[i].Oi};{add[j].list[i].Vol};{add[j].list[i].Price}";
+                    s += $";;{add[j].list[i]}";
                 }
                 s += "\r\n";
 
