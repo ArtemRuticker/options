@@ -97,8 +97,8 @@ namespace Options
                     var closest1 = futdic.Values.Select(x => new { dt = x.DateTime, order = Math.Abs((x.DateTime - opt.DateTime).Ticks) }).OrderBy(x => x.order).FirstOrDefault();
                     var closest = closest1 == null ? "" : closest1.dt.ToString();
 
-
-                    errors.Add($"{optname} {num};{opt.DateTime};{closest};{opt.Vol};\r\n");
+                    if (optname.Contains("OI"))
+                        errors.Add($"{optname} {num};{opt.DateTime};{closest};{opt.Close / 2};\r\n");
 
                 }
             }

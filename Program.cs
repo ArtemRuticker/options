@@ -53,43 +53,89 @@ namespace Options
 
         }
 
+
         static void Main(string[] args)
         {
-            var dp = new DataProcessor();
-            dp.doall(@"c:/br/CNY6.24/", @"c:/br/CNY6.24/_Price.txt", 1);
-            var zz = dp.SerializeTickRecords();
+            Dictionary<string, string> parameters = ParseArgs(args);
 
-            int n = dp.foundNum("20240205", "173900");
-
-            var ttt = JsonConvert.SerializeObject(dp.json(n, "18.07.24"), Formatting.Indented) + ",{ updatePeriod: 1200000}";
-
-            var errors = string.Join("", dp.errors);
-
-            File.WriteAllText("c:/br/cny_out.csv", zz + "\r\n\r\n\r\n\r\n\r\n" + errors);
-            File.WriteAllText("c:/br/json", ttt.Replace('"', '\''));
-
-            /*
-            if (args.Length != 4)
+            if (!parameters.ContainsKey("inputdirectory") ||
+                !parameters.ContainsKey("inputfile") ||
+                !parameters.ContainsKey("outputfile"))
             {
-                Console.WriteLine("Usage: Options <inputDirectory> <inputFile> <period> <outputFile>");
+                Console.WriteLine("Usage: Options -inputDirectory <inputDirectory> -inputFile <inputFile> -period <period> -outputFile <outputFile>  -analyzer <outputFile> -seek <20240205_173900> -exp <18.07.24> ");
                 return;
             }
 
-            string inputDirectory = AddTrailingSlash(args[0]);
-            string inputFile = args[1];
-            if (!int.TryParse(args[2], out int period))
+            string inputDirectory = AddTrailingSlash(parameters["inputdirectory"]);
+            string inputFile = parameters["inputfile"];
+
+            string outputFile = parameters["outputfile"];
+
+            var processor = new DataProcessor();
+            processor.doall(inputDirectory, inputFile, 1);
+
+
+            var zz = processor.SerializeTickRecords();
+            var errors = string.Join("", processor.errors);
+
+            File.WriteAllText(outputFile, zz + "\r\n\r\n\r\n\r\n\r\n" + errors);
+
+
+
+
+
+
+            if (parameters.ContainsKey("analyzer"))
             {
-                Console.WriteLine("Error: <period> must be an integer.");
+                if (!parameters.ContainsKey("seek") ||
+                !parameters.ContainsKey("exp"))
+                {
+                    Console.WriteLine("Usage: Options -inputDirectory <inputDirectory> -inputFile <inputFile> -period <period> -outputFile <outputFile>  -analyzer <outputFile> -seek <20240205_173900> -exp <18.07.24> ");
+                    return;
+                }
+
+                var dates = parameters["seek"].Split('_');
+
+                int n = processor.foundNum(dates[0], dates[1]);
+
+                var ttt = JsonConvert.SerializeObject(processor.json(n, parameters["exp"]), Formatting.Indented) + ",{ updatePeriod: 1200000}";
+                File.WriteAllText(parameters["analyzer"], ttt.Replace('"', '\''));
+
+
                 return;
             }
-            string outputFile = args[3];
 
-            var zz = DataProcessor.doall(inputDirectory, inputFile, period);
 
-            File.WriteAllText(outputFile, zz);
 
-            Console.WriteLine("Processing complete.");*/
 
+
+
+
+
+
+
+
+
+
+
+            Console.WriteLine("Processing complete.");
         }
+
+        static Dictionary<string, string> ParseArgs(string[] args)
+        {
+            Dictionary<string, string> parameters = new Dictionary<string, string>();
+            for (int i = 0; i < args.Length; i += 2)
+            {
+                if (i + 1 < args.Length)
+                {
+                    parameters[args[i].TrimStart('-').ToLower()] = args[i + 1];
+                }
+            }
+            return parameters;
+        }
+
+
+
+
     }
 }
